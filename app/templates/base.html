@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Daft rental bot{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="top">
+    <span class="brand">🏠 Daft rental bot</span>
+    <nav aria-label="Main">
+      <a href="/" {% if request.url.path == '/' %}aria-current="page"{% endif %}>Dashboard</a>
+      <a href="/settings" {% if request.url.path == '/settings' %}aria-current="page"{% endif %}>Settings</a>
+    </nav>
+  </header>
+  <main id="main">
+    {% if msg %}<div class="flash {{ kind }}" role="status">{{ msg }}</div>{% endif %}
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

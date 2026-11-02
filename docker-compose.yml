@@ -1,0 +1,13 @@
+services:
+  bot:
+    build: .
+    container_name: daft-bot
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    ports:
+      # Only reachable from this computer. Set ADMIN_PASSWORD before exposing it further.
+      - "127.0.0.1:${ADMIN_PORT:-8765}:8000"
+    volumes:
+      - ./data:/data

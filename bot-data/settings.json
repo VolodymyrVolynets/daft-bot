@@ -1,0 +1,27 @@
+{
+  "locations": [
+    "DUBLIN_CITY",
+    "BRAY_WICKLOW",
+    "BLACKROCK_DUBLIN",
+    "DUN_LAOGHAIRE_DUBLIN",
+    "SOUTH_CO_DUBLIN_DUBLIN"
+  ],
+  "property_types": [],
+  "min_price": null,
+  "max_price": 3000,
+  "min_beds": 2,
+  "max_beds": null,
+  "max_pages": 2,
+  "include_keywords": [],
+  "exclude_keywords": [
+    "house share",
+    "student"
+  ],
+  "exclude_agents": [],
+  "max_age_hours": 48,
+  "interval_minutes": 5,
+  "max_notifications_per_run": 100,
+  "message_template": "Hi,\n\nI'm interested in {title} and would love to arrange a viewing at your earliest convenience.\n\nThere are three of us: myself, my girlfriend and our friend. All three of us work full time. We're tidy, quiet, non-smokers with no pets.\n\nWe have employer references, recent payslips, bank statements and photo ID ready to send whenever you need them.\n\nWe're flexible for viewings, including evenings and weekends, and can come at short notice.\n\nMany thanks,\nVolodymyr",
+  "telegram_token": "",
+  "telegram_chat_id": ""
+}

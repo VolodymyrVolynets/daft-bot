@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Settings · Daft rental bot{% endblock %}
+{% block content %}
+<form method="post" action="/settings" class="card settings">
+  <h1>Settings</h1>
+
+  <fieldset>
+    <legend>Where</legend>
+    <label for="locations">Locations, one per line</label>
+    <textarea id="locations" name="locations" rows="4" aria-describedby="loc-help">{{ s.locations|join("\n") }}</textarea>
+    <p id="loc-help" class="help">daft.ie areas such as DUBLIN_CITY, DUBLIN_8_DUBLIN, CORK_CITY. Find one below and press Add.</p>
+    <div class="row">
+      <label for="loc-search" class="sr-only">Find a location</label>
+      <input id="loc-search" list="loc-list" placeholder="Type to search, e.g. RATHMINES" autocomplete="off">
+      <button type="button" id="loc-add">Add</button>
+    </div>
+    <datalist id="loc-list">{% for n in all_locations %}<option value="{{ n }}">{% endfor %}</datalist>
+  </fieldset>
+
+  <fieldset>
+    <legend>Property</legend>
+    <div class="grid">
+      <div><label for="min_price">Min rent €/month</label><input id="min_price" name="min_price" inputmode="numeric" value="{{ s.min_price or '' }}"></div>
+      <div><label for="max_price">Max rent €/month</label><input id="max_price" name="max_price" inputmode="numeric" value="{{ s.max_price or '' }}"></div>
+      <div><label for="min_beds">Min beds</label><input id="min_beds" name="min_beds" inputmode="numeric" value="{{ s.min_beds or '' }}"></div>
+      <div><label for="max_beds">Max beds</label><input id="max_beds" name="max_beds" inputmode="numeric" value="{{ s.max_beds or '' }}"></div>
+    </div>
+    <p class="help" id="pt-help">Property types (none ticked = any)</p>
+    <div class="checks" role="group" aria-describedby="pt-help">
+      {% for p in property_types %}
+        <label><input type="checkbox" name="property_types" value="{{ p }}" {% if p in s.property_types %}checked{% endif %}> {{ p|replace("_", " ")|title }}</label>
+      {% endfor %}
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Extra filters</legend>
+    <label for="include_keywords">Title must contain one of (one per line, empty = any)</label>
+    <textarea id="include_keywords" name="include_keywords" rows="2">{{ s.include_keywords|join("\n") }}</textarea>
+    <label for="exclude_keywords">Skip if title contains</label>
+    <textarea id="exclude_keywords" name="exclude_keywords" rows="3">{{ s.exclude_keywords|join("\n") }}</textarea>
+    <label for="exclude_agents">Skip these agents</label>
+    <textarea id="exclude_agents" name="exclude_agents" rows="2">{{ s.exclude_agents|join("\n") }}</textarea>
+    <label for="max_age_hours">Ignore listings older than (hours, empty = no limit)</label>
+    <input id="max_age_hours" name="max_age_hours" inputmode="numeric" value="{{ s.max_age_hours or '' }}">
+  </fieldset>
+
+  <fieldset>
+    <legend>Bot</legend>
+    <div class="grid">
+      <div><label for="interval_minutes">Check every (minutes, min 5)</label><input id="interval_minutes" name="interval_minutes" inputmode="numeric" value="{{ s.interval_minutes }}"></div>
+      <div><label for="max_notifications_per_run">Max messages per scan</label><input id="max_notifications_per_run" name="max_notifications_per_run" inputmode="numeric" value="{{ s.max_notifications_per_run }}"></div>
+      <div><label for="max_pages">Result pages per search (50 each)</label><input id="max_pages" name="max_pages" inputmode="numeric" value="{{ s.max_pages }}"></div>
+    </div>
+    <label for="message_template">Message to paste into daft's enquiry form</label>
+    <textarea id="message_template" name="message_template" rows="4" aria-describedby="tpl-help">{{ s.message_template }}</textarea>
+    <p id="tpl-help" class="help">Placeholders: {title} {price} {beds} {url} {agent}</p>
+  </fieldset>
+
+  <fieldset id="telegram">
+    <legend>Telegram</legend>
+    <ol class="help">
+      <li>In Telegram, message <b>@BotFather</b>, send <code>/newbot</code> and copy the token.</li>
+      <li>Paste it below and save, then send any message to your new bot.</li>
+      <li>Press <b>Detect chat id</b>, then <b>Send test message</b>.</li>
+    </ol>
+    <label for="telegram_token">Bot token {% if s.telegram_token %}(saved; leave blank to keep){% elif env_token %}(from environment){% endif %}</label>
+    <input id="telegram_token" name="telegram_token" type="password" autocomplete="off" value="">
+    <label for="telegram_chat_id">Chat id {% if env_chat and not s.telegram_chat_id %}(from environment){% endif %}</label>
+    <input id="telegram_chat_id" name="telegram_chat_id" value="{{ s.telegram_chat_id }}">
+  </fieldset>
+
+  <label class="inline"><input type="checkbox" name="remember_after" value="1">
+    Also remember listings that match the new criteria (avoids a burst of messages after widening the search)</label>
+  <div class="actions"><button class="primary">Save settings</button></div>
+</form>
+
+<section class="card actions" aria-label="Telegram tools">
+  <form method="post" action="/telegram/detect"><button>Detect chat id</button></form>
+  <form method="post" action="/telegram/test"><button>Send test message</button></form>
+  {% if s.telegram_token %}<form method="post" action="/telegram/clear-token"><button class="danger">Remove saved token</button></form>{% endif %}
+</section>
+
+<script>
+  document.getElementById("loc-add").addEventListener("click", () => {
+    const input = document.getElementById("loc-search");
+    const area = document.getElementById("locations");
+    const value = input.value.trim().toUpperCase();
+    if (!value) return;
+    const lines = area.value.split("\n").map(x => x.trim()).filter(Boolean);
+    if (!lines.includes(value)) lines.push(value);
+    area.value = lines.join("\n");
+    input.value = "";
+    input.focus();
+  });
+</script>
+{% endblock %}

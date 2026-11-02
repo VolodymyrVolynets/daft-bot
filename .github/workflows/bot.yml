@@ -1,0 +1,64 @@
+name: daft-bot
+
+on:
+  schedule:
+    # Every 5 minutes (GitHub's minimum). GitHub may start scheduled runs a few minutes late when busy.
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+    inputs:
+      command:
+        description: "scan = check now (even if stopped), remember = mark all current listings as seen"
+        type: choice
+        options: [scan, remember]
+        default: scan
+
+permissions:
+  contents: write
+
+concurrency:
+  group: daft-bot
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build image (runs the tests)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: daft-bot:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Run bot
+        id: bot
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          COMMAND: ${{ inputs.command || 'scan' }}
+          FORCE: ${{ github.event_name == 'workflow_dispatch' && '--force' || '' }}
+        run: |
+          touch "$RUNNER_TEMP/out"
+          docker run --rm \
+            -e TELEGRAM_BOT_TOKEN -e TELEGRAM_CHAT_ID -e DATA_DIR=/data -e GITHUB_OUTPUT=/out \
+            -v "$PWD/bot-data:/data" -v "$RUNNER_TEMP/out:/out" \
+            daft-bot:ci python -m app.cli $COMMAND $FORCE
+          cat "$RUNNER_TEMP/out" >> "$GITHUB_OUTPUT"
+
+      - name: Save remembered listings
+        if: always() && steps.bot.outputs.changed == 'true'
+        run: |
+          sudo chown -R "$(id -u):$(id -g)" bot-data
+          git config user.name "daft-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add bot-data/state.json
+          git commit -m "Update bot state [skip ci]"
+          git pull --rebase
+          git push

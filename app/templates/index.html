@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card" aria-labelledby="status-h">
+  <h1 id="status-h">Status:
+    {% if state.running %}<span class="pill on">Running</span>{% else %}<span class="pill off">Stopped</span>{% endif %}
+  </h1>
+  <dl class="facts">
+    <dt>Checks every</dt><dd>{{ settings.interval_minutes }} min</dd>
+    <dt>Last scan</dt><dd>{{ (state.last_run_at or "never")[:19]|replace("T", " ") }}{% if state.last_run_summary %} — {{ state.last_run_summary }}{% endif %}</dd>
+    <dt>Next scan</dt><dd>{% if state.running and state.next_run_at %}{{ state.next_run_at[:19]|replace("T", " ") }} UTC{% elif state.running %}starting…{% else %}— (bot stopped){% endif %}</dd>
+    <dt>Remembered listings</dt><dd>{{ state.seen|length }}{% if state.remembered_at %} (last remembered {{ state.remembered_at }}){% endif %}</dd>
+    <dt>Telegram</dt><dd>{% if settings.effective_telegram_token and settings.effective_telegram_chat_id %}configured{% else %}<a href="/settings#telegram">not set up</a>{% endif %}</dd>
+  </dl>
+  {% if state.last_error %}<p class="flash error" role="alert">Last error: {{ state.last_error }}</p>{% endif %}
+
+  <div class="actions">
+    {% if state.running %}
+      <form method="post" action="/stop"><button class="danger">Stop bot</button></form>
+      <form method="post" action="/run-now"><button>Scan now</button></form>
+    {% else %}
+      <form method="post" action="/run-now"><button>Scan once</button></form>
+      <form method="post" action="/start" class="start">
+        <label><input type="checkbox" name="remember" value="1" {% if not state.seen %}checked{% endif %}>
+          Remember current listings first (no messages for listings that already exist)</label>
+        <button class="primary">Start bot</button>
+      </form>
+    {% endif %}
+  </div>
+</section>
+
+<section class="card" aria-labelledby="mem-h">
+  <h2 id="mem-h">Remembered listings</h2>
+  <p>Remembered listings never trigger a message. Use this before starting, or after changing your criteria, so you only hear about listings published from now on.</p>
+  <div class="actions">
+    <form method="post" action="/remember"><button>Remember all current listings</button></form>
+    <form method="post" action="/forget" onsubmit="return confirm('Forget all remembered listings? The next scan may send many messages.')">
+      <button class="danger">Forget all</button>
+    </form>
+  </div>
+</section>
+
+<section class="card" aria-labelledby="matches-h">
+  <h2 id="matches-h">Recent matches</h2>
+  {% if state.matches %}
+  <div class="table-wrap"><table>
+    <thead><tr><th scope="col">Listing</th><th scope="col">Price</th><th scope="col">Beds</th><th scope="col">Published</th><th scope="col">Notified</th></tr></thead>
+    <tbody>
+    {% for m in state.matches[:50] %}
+      <tr>
+        <td><a href="{{ m.url }}" target="_blank" rel="noopener">{{ m.title }}</a></td>
+        <td>{{ m.price }}</td><td>{{ m.beds or "" }}</td>
+        <td>{{ (m.published or "")[:16]|replace("T", " ") }}</td>
+        <td>{{ m.notified_at[:16]|replace("T", " ") }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% else %}<p>No matches yet.</p>{% endif %}
+</section>
+
+<section class="card" aria-labelledby="log-h">
+  <h2 id="log-h">Log</h2>
+  <ol class="log">
+    {% for e in state.events[:60] %}
+      <li class="{{ e.level }}"><time>{{ e.at[:19]|replace("T", " ") }}</time> {{ e.message }}</li>
+    {% else %}<li>Nothing yet.</li>{% endfor %}
+  </ol>
+</section>
+{% if not auth_enabled %}<p class="hint">Tip: set ADMIN_PASSWORD before exposing this page outside your computer.</p>{% endif %}
+{% endblock %}
