@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Daft rental bot</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="top">
+    <span class="brand">🏠 Daft rental bot</span>
+    <nav aria-label="Main">
+      <a href="#dashboard" data-tab="dashboard">Dashboard</a>
+      <a href="#settings" data-tab="settings">Settings</a>
+    </nav>
+    <div class="who">
+      <span id="who-text" class="muted"></span>
+      <button type="button" id="signout" hidden>Sign out</button>
+    </div>
+  </header>
+
+  <main id="main">
+    <div id="flash" class="flash" role="status" hidden></div>
+
+    <!-- Sign in -->
+    <section id="signin" class="card signin" hidden aria-labelledby="signin-h">
+      <h1 id="signin-h">Sign in with a GitHub token</h1>
+      <p>The bot runs in GitHub Actions; this page changes it through the GitHub API. You need a token that can only access this one repository:</p>
+      <ol>
+        <li>Open <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">GitHub → New fine-grained token</a>.</li>
+        <li>Name: <code>daft-bot admin</code>. Expiration: as long as you like.</li>
+        <li>Repository access: <b>Only select repositories</b> → <code id="repo-name"></code>.</li>
+        <li>Permissions → Repository: <b>Actions: Read and write</b> and <b>Contents: Read and write</b>.</li>
+        <li>Generate, copy and paste it here. It's stored only in this browser.</li>
+      </ol>
+      <form id="signin-form">
+        <label for="token">Token</label>
+        <input id="token" type="password" autocomplete="off" required>
+        <div class="actions" style="margin-top:12px"><button class="primary">Sign in</button></div>
+      </form>
+    </section>
+
+    <!-- Dashboard -->
+    <div id="dashboard" hidden>
+      <section class="card" aria-labelledby="status-h">
+        <h1 id="status-h">Status: <span id="status-pill" class="pill">…</span></h1>
+        <dl class="facts">
+          <dt>Checks</dt><dd>every 5 minutes (GitHub may run them a few minutes late)</dd>
+          <dt>Last result</dt><dd id="last-summary">—</dd>
+          <dt>Remembered listings</dt><dd id="seen-count">—</dd>
+          <dt>Telegram</dt><dd><a id="secrets-link" target="_blank" rel="noopener">Set token and chat id in repo secrets</a></dd>
+        </dl>
+        <p id="last-error" class="flash error" role="alert" hidden></p>
+        <div class="actions" id="run-controls">
+          <button type="button" id="btn-stop" class="danger" hidden>Stop bot</button>
+          <span id="start-box" class="start" hidden>
+            <label><input type="checkbox" id="start-remember"> Remember current listings first (no messages for listings that already exist)</label>
+            <button type="button" id="btn-start" class="primary">Start bot</button>
+          </span>
+          <button type="button" id="btn-scan">Scan now</button>
+          <button type="button" id="btn-remember">Remember all current listings</button>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="runs-h">
+        <h2 id="runs-h">Recent runs <button type="button" id="btn-refresh" style="min-height:32px;padding:2px 10px;margin-left:8px">Refresh</button></h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th scope="col">Started (your time)</th><th scope="col">Type</th><th scope="col">Result</th></tr></thead>
+          <tbody id="runs"></tbody>
+        </table></div>
+      </section>
+
+      <section class="card" aria-labelledby="matches-h">
+        <h2 id="matches-h">Recent matches</h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th scope="col">Listing</th><th scope="col">Price</th><th scope="col">Beds</th><th scope="col">Notified</th></tr></thead>
+          <tbody id="matches"></tbody>
+        </table></div>
+      </section>
+    </div>
+
+    <!-- Settings -->
+    <form id="settings" class="card settings" hidden>
+      <h1>Settings</h1>
+      <fieldset>
+        <legend>Where</legend>
+        <label for="locations">Locations, one per line</label>
+        <textarea id="locations" rows="5" aria-describedby="loc-help"></textarea>
+        <p id="loc-help" class="help">daft.ie areas such as DUBLIN_CITY, DUBLIN_8_DUBLIN, BRAY_WICKLOW. Find one below and press Add.</p>
+        <div class="row">
+          <label for="loc-search" class="sr-only">Find a location</label>
+          <input id="loc-search" list="loc-list" placeholder="Type to search, e.g. RATHMINES" autocomplete="off">
+          <button type="button" id="loc-add">Add</button>
+        </div>
+        <datalist id="loc-list"></datalist>
+      </fieldset>
+
+      <fieldset>
+        <legend>Property</legend>
+        <div class="grid">
+          <div><label for="min_price">Min rent €/month</label><input id="min_price" inputmode="numeric"></div>
+          <div><label for="max_price">Max rent €/month</label><input id="max_price" inputmode="numeric"></div>
+          <div><label for="min_beds">Min beds</label><input id="min_beds" inputmode="numeric"></div>
+          <div><label for="max_beds">Max beds</label><input id="max_beds" inputmode="numeric"></div>
+        </div>
+        <p class="help" id="pt-help">Property types (none ticked = any)</p>
+        <div class="checks" role="group" aria-describedby="pt-help" id="property-types"></div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Extra filters</legend>
+        <label for="include_keywords">Title must contain one of (one per line, empty = any)</label>
+        <textarea id="include_keywords" rows="2"></textarea>
+        <label for="exclude_keywords">Skip if title contains</label>
+        <textarea id="exclude_keywords" rows="3"></textarea>
+        <label for="exclude_agents">Skip these agents</label>
+        <textarea id="exclude_agents" rows="2"></textarea>
+        <label for="max_age_hours">Ignore listings older than (hours, empty = no limit)</label>
+        <input id="max_age_hours" inputmode="numeric">
+      </fieldset>
+
+      <fieldset>
+        <legend>Messages</legend>
+        <div class="grid">
+          <div><label for="max_notifications_per_run">Max listings per scan</label><input id="max_notifications_per_run" inputmode="numeric"></div>
+          <div><label for="max_pages">Result pages per search (50 each)</label><input id="max_pages" inputmode="numeric"></div>
+        </div>
+        <label for="message_template">Message to paste into daft's enquiry form</label>
+        <textarea id="message_template" rows="10" aria-describedby="tpl-help"></textarea>
+        <p id="tpl-help" class="help">Placeholders: {title} {price} {beds} {url} {agent}. This repo is public, so everything here is visible to anyone.</p>
+      </fieldset>
+
+      <label class="inline"><input type="checkbox" id="remember_after">
+        Also remember listings that match the new criteria (avoids a burst of messages after widening the search)</label>
+      <div class="actions"><button class="primary" id="btn-save">Save settings</button></div>
+    </form>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>

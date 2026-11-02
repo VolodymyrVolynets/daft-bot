@@ -10,7 +10,7 @@ from datetime import datetime, timedelta, timezone
 
 from . import daft_search, telegram
 from .filters import reject_reason
-from .storage import Settings, load_settings, load_state, log_event, now_iso, update_state
+from .storage import Settings, load_settings, log_event, now_iso, save_settings, update_state
 
 
 def render_message(template: str, listing: dict) -> str:
@@ -32,11 +32,18 @@ class Bot:
     # ---- controls used by the admin page -------------------------------------------------
 
     def start(self) -> None:
-        update_state(lambda s: (setattr(s, "running", True), log_event(s, "info", "Bot started")))
+        self._set_running(True)
         self._wake.set()
 
     def stop(self) -> None:
-        update_state(lambda s: (setattr(s, "running", False), log_event(s, "info", "Bot stopped")))
+        self._set_running(False)
+
+    @staticmethod
+    def _set_running(running: bool) -> None:
+        settings = load_settings()
+        settings.running = running
+        save_settings(settings)
+        update_state(lambda s: log_event(s, "info", "Bot started" if running else "Bot stopped"))
 
     def remember_current(self) -> int:
         """Mark every listing that currently matches the search as already seen, without notifying."""
@@ -70,9 +77,9 @@ class Bot:
             try:
                 settings = load_settings()
                 delay = max(5, settings.interval_minutes) * 60 + random.randint(0, 45)  # jitter
-                if load_state().running:
+                if settings.running:
                     self.scan_once(settings)
-                running = load_state().running
+                running = load_settings().running
                 next_at = (datetime.now(timezone.utc) + timedelta(seconds=delay)).isoformat(timespec="seconds")
                 update_state(lambda s: setattr(s, "next_run_at", next_at if running else None))
             except Exception as exc:

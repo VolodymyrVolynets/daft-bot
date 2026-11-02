@@ -19,7 +19,7 @@ def _fingerprint() -> str:
     # Only remembered listings and matches decide whether the state is worth committing back to the repo;
     # a timestamp-only change every 10 minutes would flood the history with commits.
     s = load_state()
-    return hashlib.sha256(json.dumps([sorted(s.seen), s.matches, s.running], default=str).encode()).hexdigest()
+    return hashlib.sha256(json.dumps([sorted(s.seen), s.matches], default=str).encode()).hexdigest()
 
 
 def _output(name: str, value: str) -> None:
@@ -38,7 +38,7 @@ def main(argv: list[str]) -> int:
         print(f"Remembered {bot.remember_current()} listings")
         ok = True
     elif command == "scan":
-        if not load_state().running and "--force" not in argv:
+        if not load_settings().running and "--force" not in argv:
             print("Bot is stopped; nothing to do.")
             _output("changed", "false")
             return 0

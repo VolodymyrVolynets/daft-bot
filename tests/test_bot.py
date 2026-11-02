@@ -92,7 +92,7 @@ def test_cap_defers_rest_to_next_run(env):
 
 def test_loop_schedules_next_run(env, monkeypatch):
     b = Bot()
-    storage.update_state(lambda s: setattr(s, "running", True))
+    storage.save_settings(Settings(running=True, max_age_hours=None))
 
     class StopLoop(Exception):
         pass

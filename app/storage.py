@@ -23,6 +23,9 @@ def now_iso() -> str:
 
 @dataclass
 class Settings:
+    # Whether scheduled scans run. Kept here (not in state.json) because only people change it, never the bot.
+    running: bool = False
+
     # Search (sent to daft.ie)
     locations: list[str] = field(default_factory=lambda: ["DUBLIN_CITY"])
     property_types: list[str] = field(default_factory=list)
@@ -61,7 +64,6 @@ class Settings:
 
 @dataclass
 class State:
-    running: bool = False
     # Listing id -> when it was remembered. Remembered listings never trigger a notification.
     seen: dict[str, str] = field(default_factory=dict)
     remembered_at: str | None = None

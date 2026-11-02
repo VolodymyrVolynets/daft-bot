@@ -27,9 +27,9 @@ Safety nets: at most *Max messages per scan* are sent per scan, and the rest wai
 `.github/workflows/bot.yml` builds the Docker image and runs one scan every 5 minutes, using `bot-data/settings.json` and `bot-data/state.json` from this repo. When listings are newly remembered, it commits `bot-data/state.json` back.
 
 - **Secrets** (Settings → Secrets and variables → Actions): `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`.
-- **Start/stop:** set `"running"` in `bot-data/state.json`, or disable the workflow in the Actions tab.
-- **Scan now / remember current listings:** Actions → daft-bot → Run workflow.
-- **Criteria:** edit `bot-data/settings.json`. The repo is public, so don't put private details there; the Telegram token stays in Secrets.
+- **Admin page:** `docs/` is a static page served by GitHub Pages (Settings → Pages → Deploy from a branch → `main` / `/docs`), at `https://<user>.github.io/daft-bot/`. Sign in with a fine-grained token for this repo only, with **Actions** and **Contents** read/write. The page edits `bot-data/settings.json` (criteria, message, start/stop) and starts `scan`/`remember` runs.
+- **Without the admin page:** edit `bot-data/settings.json` (`"running"` starts/stops scheduled scans), and use Actions → daft-bot → Run workflow.
+- The repo is public, so don't put private details in settings; the Telegram token stays in Secrets.
 - Run either GitHub Actions or the local Docker bot, not both, or you'll get every message twice.
 
 ## Options (.env)

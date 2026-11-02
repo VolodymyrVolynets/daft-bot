@@ -2,19 +2,19 @@
 {% block content %}
 <section class="card" aria-labelledby="status-h">
   <h1 id="status-h">Status:
-    {% if state.running %}<span class="pill on">Running</span>{% else %}<span class="pill off">Stopped</span>{% endif %}
+    {% if settings.running %}<span class="pill on">Running</span>{% else %}<span class="pill off">Stopped</span>{% endif %}
   </h1>
   <dl class="facts">
     <dt>Checks every</dt><dd>{{ settings.interval_minutes }} min</dd>
     <dt>Last scan</dt><dd>{{ (state.last_run_at or "never")[:19]|replace("T", " ") }}{% if state.last_run_summary %} — {{ state.last_run_summary }}{% endif %}</dd>
-    <dt>Next scan</dt><dd>{% if state.running and state.next_run_at %}{{ state.next_run_at[:19]|replace("T", " ") }} UTC{% elif state.running %}starting…{% else %}— (bot stopped){% endif %}</dd>
+    <dt>Next scan</dt><dd>{% if settings.running and state.next_run_at %}{{ state.next_run_at[:19]|replace("T", " ") }} UTC{% elif settings.running %}starting…{% else %}— (bot stopped){% endif %}</dd>
     <dt>Remembered listings</dt><dd>{{ state.seen|length }}{% if state.remembered_at %} (last remembered {{ state.remembered_at }}){% endif %}</dd>
     <dt>Telegram</dt><dd>{% if settings.effective_telegram_token and settings.effective_telegram_chat_id %}configured{% else %}<a href="/settings#telegram">not set up</a>{% endif %}</dd>
   </dl>
   {% if state.last_error %}<p class="flash error" role="alert">Last error: {{ state.last_error }}</p>{% endif %}
 
   <div class="actions">
-    {% if state.running %}
+    {% if settings.running %}
       <form method="post" action="/stop"><button class="danger">Stop bot</button></form>
       <form method="post" action="/run-now"><button>Scan now</button></form>
     {% else %}
